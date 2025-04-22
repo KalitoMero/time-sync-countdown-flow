@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useTimer } from '@/context/TimerContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -15,7 +14,6 @@ const ActiveCountdowns: React.FC = () => {
   const { activeTimers, removeTimer } = useTimer();
   const [sortedCountdowns, setSortedCountdowns] = useState<CountdownData[]>([]);
 
-  // Update and sort countdowns
   useEffect(() => {
     if (activeTimers && activeTimers.length > 0) {
       const countdowns = activeTimers.map(timer => ({
@@ -24,7 +22,6 @@ const ActiveCountdowns: React.FC = () => {
         remainingTime: timer.remainingTime,
       }));
       
-      // Sort by remaining time (shortest first)
       setSortedCountdowns([...countdowns].sort((a, b) => a.remainingTime - b.remainingTime));
     } else {
       setSortedCountdowns([]);
@@ -67,37 +64,35 @@ const ActiveCountdowns: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-4xl font-bold text-workshop text-center mb-8">
+      <h1 className="text-4xl font-bold text-workshop text-center mb-6">
         Aktive Timer
       </h1>
-      <div className="space-y-4">
+      <div className="space-y-2">
         {sortedCountdowns.map((countdown) => (
           <Card key={countdown.userId} className="border-workshop-light border-2">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-[1fr_auto] gap-4 items-center">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-lg text-gray-600">Mitarbeiter:</p>
-                    <p className="text-2xl font-semibold">{countdown.userName}</p>
-                  </div>
-                  <div>
-                    <p className="text-lg text-gray-600">Restzeit:</p>
-                    <p className={`text-2xl font-bold ${
-                      isUnderTenMinutes(countdown.remainingTime) 
-                        ? 'text-workshop-danger animate-pulse' 
-                        : 'text-workshop'
-                    }`}>
-                      {formatTime(countdown.remainingTime)}
-                    </p>
-                  </div>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-4 items-center">
+                <div className="text-lg">
+                  <span className="text-gray-600">Mitarbeiter: </span>
+                  <span className="font-semibold">{countdown.userName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600 mr-2">Restzeit: </span>
+                  <span className={`text-2xl font-bold tracking-wider ${
+                    isUnderTenMinutes(countdown.remainingTime) 
+                      ? 'text-workshop-danger animate-pulse' 
+                      : 'text-workshop'
+                  }`}>
+                    {formatTime(countdown.remainingTime)}
+                  </span>
                 </div>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-12 w-12 border-2 border-green-500 hover:bg-green-500 hover:text-white"
+                  className="h-10 w-10 border-2 border-green-500 hover:bg-green-500 hover:text-white"
                   onClick={() => handleComplete(countdown.userId)}
                 >
-                  <Check className="h-6 w-6 text-green-500 hover:text-white" />
+                  <Check className="h-5 w-5 text-green-500 hover:text-white" />
                 </Button>
               </div>
             </CardContent>
