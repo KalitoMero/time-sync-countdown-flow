@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -72,8 +73,9 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveTimerState(timer);
     if (timer) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timer));
-      toast.success(`${timer.duration} Minuten wurden gesetzt für ${timer.userName}`, {
-        position: "bottom-left"
+      toast(`${timer.duration} Minuten wurden gesetzt für ${timer.userName}`, {
+        position: "bottom-left",
+        duration: 3000
       });
     } else {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
@@ -101,9 +103,7 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       // Clear timer if it has ended
       if (timeLeft <= 0) {
-        toast('Time completed!', {
-          description: `${activeTimer.userName}'s timer has finished`,
-        });
+        setActiveTimer(null);
       }
     };
 
