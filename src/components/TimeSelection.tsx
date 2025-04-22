@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
@@ -15,10 +16,30 @@ const TimeSelection: React.FC = () => {
 
   const timeOptions = [15, 30, 45, 60, 90, 120];
 
-  const handleTimeSelect = (duration: number) => {
+  const handleTimeSelect = (duration: number | 'morgen') => {
     if (!userId) return;
     
     const now = Date.now();
+    
+    if (duration === 'morgen') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(7, 59, 0, 0);
+
+      const timerData = {
+        userId,
+        userName,
+        startTime: now,
+        duration: -1, // Special flag for "morgen vor 8"
+        endTime: tomorrow.getTime(),
+        isMorgenVor8: true
+      };
+
+      setActiveTimer(timerData);
+      navigate('/countdown');
+      return;
+    }
+
     const durationMs = duration * 60 * 1000;
     const endTime = now + durationMs;
 
@@ -27,7 +48,8 @@ const TimeSelection: React.FC = () => {
       userName,
       startTime: now,
       duration,
-      endTime
+      endTime,
+      isMorgenVor8: false
     };
 
     setActiveTimer(timerData);
@@ -60,6 +82,12 @@ const TimeSelection: React.FC = () => {
                 {time} min
               </button>
             ))}
+            <button
+              className="bg-workshop-accent hover:bg-workshop text-white p-6 rounded-lg text-2xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg h-24 col-span-2 md:col-span-3"
+              onClick={() => handleTimeSelect('morgen')}
+            >
+              Morgen früh vor 8 Uhr
+            </button>
           </div>
         </CardContent>
         <CardFooter className="flex justify-center py-4">

@@ -1,8 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
-// Define interfaces for our data
 export interface User {
   id: string;
   name: string;
@@ -11,10 +9,11 @@ export interface User {
 export interface TimerData {
   userId: string;
   userName: string;
-  startTime: number; // unix timestamp
-  duration: number; // in minutes
-  endTime: number; // unix timestamp
-  remainingTime?: number; // calculated remaining time
+  startTime: number;
+  duration: number;
+  endTime: number;
+  remainingTime?: number;
+  isMorgenVor8?: boolean;
 }
 
 interface TimerContextType {
@@ -30,7 +29,6 @@ interface TimerContextType {
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
-// Sample user data - can be replaced with dynamic data later
 const defaultUsers: User[] = [
   { id: '1', name: 'John Smith' },
   { id: '2', name: 'Emma Johnson' },
@@ -42,7 +40,6 @@ const defaultUsers: User[] = [
   { id: '8', name: 'Lisa Anderson' },
 ];
 
-// Local storage keys
 const LOCAL_STORAGE_KEY = 'workshop-timer-data';
 const TIMERS_STORAGE_KEY = 'workshop-all-timers';
 const MODE_STORAGE_KEY = 'workshop-timer-mode';
@@ -54,7 +51,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isMonitorMode, setIsMonitorMode] = useState<boolean>(false);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
 
-  // Load timer data from localStorage on mount
   useEffect(() => {
     const storedTimerData = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (storedTimerData) {
@@ -66,7 +62,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
-    // Load all timers
     const storedAllTimers = localStorage.getItem(TIMERS_STORAGE_KEY);
     if (storedAllTimers) {
       try {
@@ -77,34 +72,30 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
-    // Check if device is in monitor mode
     const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
     if (storedMode) {
       setIsMonitorMode(storedMode === 'true');
     }
   }, []);
 
-  // Update timer data in localStorage
   const setActiveTimer = (timer: TimerData | null) => {
     setActiveTimerState(timer);
     
     if (timer) {
-      // Store the current timer
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timer));
       
-      // Add or update in activeTimers array
       setActiveTimers(prev => {
-        // Remove any existing timer with the same userId
         const filteredTimers = prev.filter(t => t.userId !== timer.userId);
-        // Add the new timer
         return [...filteredTimers, timer];
       });
       
-      // Store updated timers array
       localStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify([...activeTimers.filter(t => t.userId !== timer.userId), timer]));
       
-      // Show only a single toast at the bottom left
-      toast(`${timer.duration} Minuten wurden gesetzt für ${timer.userName}`, {
+      const message = timer.isMorgenVor8 
+        ? `Timer für ${timer.userName} wurde auf "morgen vor 8 Uhr" gesetzt`
+        : `${timer.duration} Minuten wurden gesetzt für ${timer.userName}`;
+      
+      toast(message, {
         position: "bottom-left",
         duration: 3000
       });
@@ -113,30 +104,24 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  // Remove a timer by userId
   const removeTimer = (userId: string) => {
-    // Remove from activeTimers
     const updatedTimers = activeTimers.filter(timer => timer.userId !== userId);
     setActiveTimers(updatedTimers);
     
-    // Update localStorage
     localStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(updatedTimers));
     
-    // Update activeTimer if it's the current one
     if (activeTimer && activeTimer.userId === userId) {
       setActiveTimerState(null);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
 
-  // Toggle between user and monitor mode
   const toggleMode = () => {
     const newMode = !isMonitorMode;
     setIsMonitorMode(newMode);
     localStorage.setItem(MODE_STORAGE_KEY, String(newMode));
   };
 
-  // Calculate and update remaining time every second
   useEffect(() => {
     if (!activeTimer) {
       setRemainingTime(null);
@@ -145,35 +130,33 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const updateRemainingTime = () => {
       const now = Date.now();
+      
+      if (activeTimer.isMorgenVor8) {
+        return;
+      }
+
       const timeLeft = Math.max(0, activeTimer.endTime - now);
       setRemainingTime(timeLeft);
 
-      // Update activeTimers with current time
       setActiveTimers(prevTimers => {
         return prevTimers.map(timer => {
+          if (timer.isMorgenVor8) {
+            return timer;
+          }
           const timerTimeLeft = Math.max(0, timer.endTime - now);
           return {
             ...timer,
             remainingTime: timerTimeLeft
           };
-        }).filter(timer => timer.remainingTime > 0);
+        });
       });
-
-      // Clear timer if it has ended
-      if (timeLeft <= 0) {
-        removeTimer(activeTimer.userId);
-      }
     };
 
-    // Update immediately
     updateRemainingTime();
-
-    // Then update every second
     const interval = setInterval(updateRemainingTime, 1000);
     return () => clearInterval(interval);
   }, [activeTimer]);
 
-  // Add event listeners for storage changes (cross-tab sync)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === LOCAL_STORAGE_KEY) {
@@ -223,7 +206,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
-// Create a hook for using the context
 export const useTimer = () => {
   const context = useContext(TimerContext);
   if (context === undefined) {
