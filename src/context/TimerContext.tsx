@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -132,17 +133,32 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const now = Date.now();
       
       if (activeTimer.isMorgenVor8) {
+        // Für "morgen vor 8" Timer setzen wir keine Restzeit
         return;
       }
 
       const timeLeft = Math.max(0, activeTimer.endTime - now);
       setRemainingTime(timeLeft);
+    };
 
+    updateRemainingTime();
+    const interval = setInterval(updateRemainingTime, 1000);
+    return () => clearInterval(interval);
+  }, [activeTimer]);
+
+  // Separate useEffect für die Aktualisierung aller Timer
+  useEffect(() => {
+    const updateAllTimers = () => {
+      const now = Date.now();
+      
       setActiveTimers(prevTimers => {
         return prevTimers.map(timer => {
+          // "morgen vor 8" Timer nicht aktualisieren
           if (timer.isMorgenVor8) {
             return timer;
           }
+          
+          // Für normale Timer die verbleibende Zeit berechnen
           const timerTimeLeft = Math.max(0, timer.endTime - now);
           return {
             ...timer,
@@ -152,10 +168,11 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
     };
 
-    updateRemainingTime();
-    const interval = setInterval(updateRemainingTime, 1000);
+    // Initial ausführen und dann alle Sekunde aktualisieren
+    updateAllTimers();
+    const interval = setInterval(updateAllTimers, 1000);
     return () => clearInterval(interval);
-  }, [activeTimer]);
+  }, []); // Leeres Dependency Array sorgt dafür, dass dies nur einmal beim Mounten passiert
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
