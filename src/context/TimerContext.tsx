@@ -14,12 +14,15 @@ export interface TimerData {
   startTime: number; // unix timestamp
   duration: number; // in minutes
   endTime: number; // unix timestamp
+  remainingTime?: number; // calculated remaining time
 }
 
 interface TimerContextType {
   users: User[];
   activeTimer: TimerData | null;
+  activeTimers: TimerData[];
   setActiveTimer: (timer: TimerData | null) => void;
+  removeTimer: (userId: string) => void;
   isMonitorMode: boolean;
   toggleMode: () => void;
   remainingTime: number | null;
@@ -39,13 +42,15 @@ const defaultUsers: User[] = [
   { id: '8', name: 'Lisa Anderson' },
 ];
 
-// Local storage key
+// Local storage keys
 const LOCAL_STORAGE_KEY = 'workshop-timer-data';
+const TIMERS_STORAGE_KEY = 'workshop-all-timers';
 const MODE_STORAGE_KEY = 'workshop-timer-mode';
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users] = useState<User[]>(defaultUsers);
   const [activeTimer, setActiveTimerState] = useState<TimerData | null>(null);
+  const [activeTimers, setActiveTimers] = useState<TimerData[]>([]);
   const [isMonitorMode, setIsMonitorMode] = useState<boolean>(false);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
 
@@ -61,6 +66,17 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
+    // Load all timers
+    const storedAllTimers = localStorage.getItem(TIMERS_STORAGE_KEY);
+    if (storedAllTimers) {
+      try {
+        const parsedTimers = JSON.parse(storedAllTimers) as TimerData[];
+        setActiveTimers(parsedTimers);
+      } catch (error) {
+        console.error('Error parsing all timers data:', error);
+      }
+    }
+
     // Check if device is in monitor mode
     const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
     if (storedMode) {
@@ -71,13 +87,44 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Update timer data in localStorage
   const setActiveTimer = (timer: TimerData | null) => {
     setActiveTimerState(timer);
+    
     if (timer) {
+      // Store the current timer
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timer));
+      
+      // Add or update in activeTimers array
+      setActiveTimers(prev => {
+        // Remove any existing timer with the same userId
+        const filteredTimers = prev.filter(t => t.userId !== timer.userId);
+        // Add the new timer
+        return [...filteredTimers, timer];
+      });
+      
+      // Store updated timers array
+      localStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify([...activeTimers.filter(t => t.userId !== timer.userId), timer]));
+      
+      // Show only a single toast at the bottom left
       toast(`${timer.duration} Minuten wurden gesetzt für ${timer.userName}`, {
         position: "bottom-left",
         duration: 3000
       });
     } else {
+      localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+  };
+
+  // Remove a timer by userId
+  const removeTimer = (userId: string) => {
+    // Remove from activeTimers
+    const updatedTimers = activeTimers.filter(timer => timer.userId !== userId);
+    setActiveTimers(updatedTimers);
+    
+    // Update localStorage
+    localStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(updatedTimers));
+    
+    // Update activeTimer if it's the current one
+    if (activeTimer && activeTimer.userId === userId) {
+      setActiveTimerState(null);
       localStorage.removeItem(LOCAL_STORAGE_KEY);
     }
   };
@@ -101,9 +148,20 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const timeLeft = Math.max(0, activeTimer.endTime - now);
       setRemainingTime(timeLeft);
 
+      // Update activeTimers with current time
+      setActiveTimers(prevTimers => {
+        return prevTimers.map(timer => {
+          const timerTimeLeft = Math.max(0, timer.endTime - now);
+          return {
+            ...timer,
+            remainingTime: timerTimeLeft
+          };
+        }).filter(timer => timer.remainingTime > 0);
+      });
+
       // Clear timer if it has ended
       if (timeLeft <= 0) {
-        setActiveTimer(null);
+        removeTimer(activeTimer.userId);
       }
     };
 
@@ -123,14 +181,22 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           try {
             const parsedData = JSON.parse(e.newValue) as TimerData;
             setActiveTimerState(parsedData);
-            toast.info(`Timer updated`, {
-              description: `${parsedData.userName}: ${parsedData.duration} minutes`,
-            });
           } catch (error) {
             console.error('Error parsing stored timer data from event:', error);
           }
         } else {
           setActiveTimerState(null);
+        }
+      } else if (e.key === TIMERS_STORAGE_KEY) {
+        if (e.newValue) {
+          try {
+            const parsedTimers = JSON.parse(e.newValue) as TimerData[];
+            setActiveTimers(parsedTimers);
+          } catch (error) {
+            console.error('Error parsing all timers data from event:', error);
+          }
+        } else {
+          setActiveTimers([]);
         }
       }
     };
@@ -143,8 +209,10 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <TimerContext.Provider 
       value={{ 
         users, 
-        activeTimer, 
-        setActiveTimer, 
+        activeTimer,
+        activeTimers,
+        setActiveTimer,
+        removeTimer,
         isMonitorMode,
         toggleMode,
         remainingTime

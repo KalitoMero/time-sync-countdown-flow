@@ -5,22 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Home, Clock } from 'lucide-react';
-import { toast } from 'sonner';
 import ActiveCountdowns from './ActiveCountdowns';
 
 const CountdownDisplay: React.FC = () => {
   const { activeTimer, remainingTime, isMonitorMode } = useTimer();
   const navigate = useNavigate();
-
-  // Show toast when a new timer is set
-  React.useEffect(() => {
-    if (activeTimer) {
-      toast.success(
-        `${activeTimer.duration} Minuten wurden gesetzt für ${activeTimer.userName}`,
-        { duration: 3000 }
-      );
-    }
-  }, [activeTimer?.startTime]);
 
   // If in monitor mode, show the ActiveCountdowns component
   if (isMonitorMode) {
@@ -34,15 +23,15 @@ const CountdownDisplay: React.FC = () => {
         <Card className="w-full max-w-2xl border-workshop-light border-2">
           <CardHeader className="bg-workshop text-white">
             <CardTitle className="text-3xl font-bold text-center">
-              No Active Timer
+              Kein aktiver Timer
             </CardTitle>
           </CardHeader>
           <CardContent className="p-8 text-center">
             <Clock className="w-24 h-24 mx-auto text-workshop-light mb-6" />
             <p className="text-xl mb-6">
               {isMonitorMode 
-                ? "Waiting for a user to start a timer..." 
-                : "Please select a user and set a timer."}
+                ? "Warten auf einen Benutzer, der einen Timer startet..." 
+                : "Bitte wählen Sie einen Benutzer und stellen Sie einen Timer ein."}
             </p>
           </CardContent>
           {!isMonitorMode && (
@@ -52,7 +41,7 @@ const CountdownDisplay: React.FC = () => {
                 className="bg-workshop hover:bg-workshop-light text-white"
                 onClick={() => navigate('/')}
               >
-                <Home className="mr-2 h-5 w-5" /> Go to Home
+                <Home className="mr-2 h-5 w-5" /> Zur Startseite
               </Button>
             </CardFooter>
           )}
@@ -132,7 +121,7 @@ const CountdownDisplay: React.FC = () => {
               className="border-workshop text-workshop hover:bg-workshop hover:text-white"
               onClick={() => navigate('/')}
             >
-              <Home className="mr-2 h-5 w-5" /> Go to Home
+              <Home className="mr-2 h-5 w-5" /> Zur Startseite
             </Button>
             <Button
               size="lg"
@@ -142,7 +131,7 @@ const CountdownDisplay: React.FC = () => {
                 navigate(0); // Force a complete refresh
               }}
             >
-              Cancel Timer
+              Timer abbrechen
             </Button>
           </CardFooter>
         )}

@@ -6,27 +6,30 @@ import { Button } from '@/components/ui/button';
 import { Timer, Check } from 'lucide-react';
 
 interface CountdownData {
+  userId: string;
   userName: string;
   remainingTime: number;
 }
 
 const ActiveCountdowns: React.FC = () => {
-  const { activeTimer, remainingTime, setActiveTimer } = useTimer();
+  const { activeTimers, removeTimer } = useTimer();
   const [sortedCountdowns, setSortedCountdowns] = useState<CountdownData[]>([]);
 
   // Update and sort countdowns
   useEffect(() => {
-    if (activeTimer && remainingTime !== null) {
-      const countdown: CountdownData = {
-        userName: activeTimer.userName,
-        remainingTime: remainingTime,
-      };
+    if (activeTimers && activeTimers.length > 0) {
+      const countdowns = activeTimers.map(timer => ({
+        userId: timer.userId,
+        userName: timer.userName,
+        remainingTime: timer.remainingTime,
+      }));
       
-      setSortedCountdowns([countdown].sort((a, b) => a.remainingTime - b.remainingTime));
+      // Sort by remaining time (shortest first)
+      setSortedCountdowns([...countdowns].sort((a, b) => a.remainingTime - b.remainingTime));
     } else {
       setSortedCountdowns([]);
     }
-  }, [activeTimer, remainingTime]);
+  }, [activeTimers]);
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 1000 / 60);
@@ -38,8 +41,8 @@ const ActiveCountdowns: React.FC = () => {
     return ms < 600000; // 10 minutes in milliseconds
   };
 
-  const handleComplete = () => {
-    setActiveTimer(null);
+  const handleComplete = (userId: string) => {
+    removeTimer(userId);
   };
 
   if (sortedCountdowns.length === 0) {
@@ -68,8 +71,8 @@ const ActiveCountdowns: React.FC = () => {
         Aktive Timer
       </h1>
       <div className="space-y-4">
-        {sortedCountdowns.map((countdown, index) => (
-          <Card key={index} className="border-workshop-light border-2">
+        {sortedCountdowns.map((countdown) => (
+          <Card key={countdown.userId} className="border-workshop-light border-2">
             <CardContent className="p-6">
               <div className="grid grid-cols-[1fr_auto] gap-4 items-center">
                 <div className="space-y-4">
@@ -92,9 +95,9 @@ const ActiveCountdowns: React.FC = () => {
                   variant="outline"
                   size="icon"
                   className="h-12 w-12 border-2 border-green-500 hover:bg-green-500 hover:text-white"
-                  onClick={handleComplete}
+                  onClick={() => handleComplete(countdown.userId)}
                 >
-                  <Check className="h-6 w-6 text-green-500 group-hover:text-white" />
+                  <Check className="h-6 w-6 text-green-500 hover:text-white" />
                 </Button>
               </div>
             </CardContent>
