@@ -30,12 +30,17 @@ const ActiveCountdowns: React.FC = () => {
         isExpired: !timer.isMorgenVor8 && timer.endTime <= now
       }));
       
-      // Sort by: regular timers first (by remaining time), then expired timers, then "morgen vor 8" entries
+      // Sortierung: 1. Abgelaufene Timer, 2. Aktive Timer (nach Restzeit), 3. "morgen vor 8" Einträge
       const sortedTimers = [...countdowns].sort((a, b) => {
+        // Abgelaufene Timer zuerst
+        if (a.isExpired && !b.isExpired) return -1;
+        if (!a.isExpired && b.isExpired) return 1;
+        
+        // "morgen vor 8" Einträge zuletzt
         if (a.isMorgenVor8 && !b.isMorgenVor8) return 1;
         if (!a.isMorgenVor8 && b.isMorgenVor8) return -1;
-        if (a.isExpired && !b.isExpired) return 1;
-        if (!a.isExpired && b.isExpired) return -1;
+        
+        // Aktive Timer nach verbleibender Zeit sortieren
         return a.remainingTime - b.remainingTime;
       });
       
@@ -105,7 +110,7 @@ const ActiveCountdowns: React.FC = () => {
             key={countdown.userId} 
             className={`border-workshop-light border-2 ${
               countdown.isMorgenVor8 ? 'bg-gray-50' : ''
-            }`}
+            } ${countdown.isExpired ? 'bg-rose-50' : ''}`}
           >
             <CardContent className="p-3">
               <div className="grid grid-cols-[1.5fr_1fr_1fr_auto] gap-4 items-center">
@@ -135,7 +140,7 @@ const ActiveCountdowns: React.FC = () => {
                       {formatMorgenEndTime(countdown.endTime)}
                     </span>
                   ) : countdown.isExpired ? (
-                    <span className="text-2xl font-bold text-workshop-danger">
+                    <span className="text-2xl font-bold text-red-600">
                       abgelaufen
                     </span>
                   ) : (
