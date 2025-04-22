@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
@@ -6,11 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Home, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import ActiveCountdowns from './ActiveCountdowns';
 
 const CountdownDisplay: React.FC = () => {
   const { activeTimer, remainingTime, isMonitorMode } = useTimer();
   const navigate = useNavigate();
+
+  // Show toast when a new timer is set
+  React.useEffect(() => {
+    if (activeTimer) {
+      toast.success(
+        `${activeTimer.duration} Minuten wurden gesetzt für ${activeTimer.userName}`,
+        { duration: 3000 }
+      );
+    }
+  }, [activeTimer?.startTime]);
 
   // If in monitor mode, show the ActiveCountdowns component
   if (isMonitorMode) {

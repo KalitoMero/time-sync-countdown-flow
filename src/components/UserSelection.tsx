@@ -1,35 +1,55 @@
 
 import React from 'react';
-import { useTimer } from '@/context/TimerContext';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useTimer } from '@/context/TimerContext';
+import SettingsDialog from './SettingsDialog';
 
 const UserSelection: React.FC = () => {
-  const { users } = useTimer();
   const navigate = useNavigate();
+  const { isMonitorMode } = useTimer();
 
-  const handleUserSelect = (userId: string, userName: string) => {
-    navigate(`/time-selection/${userId}`, { state: { userName } });
+  // Get employees from localStorage or use default
+  const getEmployees = () => {
+    const storedEmployees = localStorage.getItem('employees');
+    if (storedEmployees) {
+      return JSON.parse(storedEmployees);
+    }
+    return [
+      { id: '1', name: 'Max Mustermann' },
+      { id: '2', name: 'Anna Schmidt' },
+      { id: '3', name: 'Peter Meyer' },
+    ];
   };
 
+  const employees = getEmployees();
+
+  const handleUserSelect = (userId: string, userName: string) => {
+    navigate(`/time-selection/${userId}?name=${encodeURIComponent(userName)}`);
+  };
+
+  if (isMonitorMode) {
+    return <ActiveCountdowns />;
+  }
+
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <Card className="border-workshop-light border-2">
-        <CardHeader className="bg-workshop text-white">
-          <CardTitle className="text-3xl font-bold text-center">
-            Select Your Name
-          </CardTitle>
+    <div className="container mx-auto p-4">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7 bg-workshop text-white">
+          <CardTitle className="text-3xl font-bold">Mitarbeiter auswählen</CardTitle>
+          <SettingsDialog />
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {users.map((user) => (
-              <button
-                key={user.id}
-                className="bg-workshop-light hover:bg-workshop text-white p-6 rounded-lg text-xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg h-24"
-                onClick={() => handleUserSelect(user.id, user.name)}
+        <CardContent className="grid gap-4 p-6">
+          <div className="grid grid-cols-2 gap-4">
+            {employees.map((employee) => (
+              <Button
+                key={employee.id}
+                onClick={() => handleUserSelect(employee.id, employee.name)}
+                className="h-24 text-xl bg-workshop hover:bg-workshop-light"
               >
-                {user.name}
-              </button>
+                {employee.name}
+              </Button>
             ))}
           </div>
         </CardContent>

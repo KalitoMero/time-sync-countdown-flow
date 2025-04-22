@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { useTimer } from '@/context/TimerContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Timer } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Timer, Check } from 'lucide-react';
 
 interface CountdownData {
   userName: string;
@@ -10,7 +11,7 @@ interface CountdownData {
 }
 
 const ActiveCountdowns: React.FC = () => {
-  const { activeTimer, remainingTime } = useTimer();
+  const { activeTimer, remainingTime, setActiveTimer } = useTimer();
   const [sortedCountdowns, setSortedCountdowns] = useState<CountdownData[]>([]);
 
   // Update and sort countdowns
@@ -21,11 +22,25 @@ const ActiveCountdowns: React.FC = () => {
         remainingTime: remainingTime,
       };
       
-      setSortedCountdowns([countdown]);
+      setSortedCountdowns([countdown].sort((a, b) => a.remainingTime - b.remainingTime));
     } else {
       setSortedCountdowns([]);
     }
   }, [activeTimer, remainingTime]);
+
+  const formatTime = (ms: number) => {
+    const minutes = Math.floor(ms / 1000 / 60);
+    const seconds = Math.floor((ms / 1000) % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const isUnderTenMinutes = (ms: number) => {
+    return ms < 600000; // 10 minutes in milliseconds
+  };
+
+  const handleComplete = () => {
+    setActiveTimer(null);
+  };
 
   if (sortedCountdowns.length === 0) {
     return (
@@ -47,16 +62,6 @@ const ActiveCountdowns: React.FC = () => {
     );
   }
 
-  const formatTime = (ms: number) => {
-    const minutes = Math.floor(ms / 1000 / 60);
-    const seconds = Math.floor((ms / 1000) % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const isUnderTenMinutes = (ms: number) => {
-    return ms < 600000; // 10 minutes in milliseconds
-  };
-
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <h1 className="text-4xl font-bold text-workshop text-center mb-8">
@@ -66,21 +71,31 @@ const ActiveCountdowns: React.FC = () => {
         {sortedCountdowns.map((countdown, index) => (
           <Card key={index} className="border-workshop-light border-2">
             <CardContent className="p-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-lg text-gray-600">Mitarbeiter:</p>
-                  <p className="text-2xl font-semibold">{countdown.userName}</p>
+              <div className="grid grid-cols-[1fr_auto] gap-4 items-center">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-lg text-gray-600">Mitarbeiter:</p>
+                    <p className="text-2xl font-semibold">{countdown.userName}</p>
+                  </div>
+                  <div>
+                    <p className="text-lg text-gray-600">Restzeit:</p>
+                    <p className={`text-2xl font-bold ${
+                      isUnderTenMinutes(countdown.remainingTime) 
+                        ? 'text-workshop-danger animate-pulse' 
+                        : 'text-workshop'
+                    }`}>
+                      {formatTime(countdown.remainingTime)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-lg text-gray-600">Restzeit:</p>
-                  <p className={`text-2xl font-bold ${
-                    isUnderTenMinutes(countdown.remainingTime) 
-                      ? 'text-workshop-danger animate-pulse' 
-                      : 'text-workshop'
-                  }`}>
-                    {`${Math.floor(countdown.remainingTime / 1000 / 60)} Minuten`}
-                  </p>
-                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-12 w-12 border-2 border-green-500 hover:bg-green-500 hover:text-white"
+                  onClick={handleComplete}
+                >
+                  <Check className="h-6 w-6 text-green-500 group-hover:text-white" />
+                </Button>
               </div>
             </CardContent>
           </Card>
