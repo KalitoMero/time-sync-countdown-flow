@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -73,8 +72,8 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveTimerState(timer);
     if (timer) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(timer));
-      toast.success(`Timer set for ${timer.userName}`, {
-        description: `${timer.duration} minutes`,
+      toast.success(`${timer.duration} Minuten wurden gesetzt für ${timer.userName}`, {
+        position: "bottom-left"
       });
     } else {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
