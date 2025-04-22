@@ -1,15 +1,19 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Home, Clock } from 'lucide-react';
+import ActiveCountdowns from './ActiveCountdowns';
 
 const CountdownDisplay: React.FC = () => {
   const { activeTimer, remainingTime, isMonitorMode } = useTimer();
   const navigate = useNavigate();
+
+  // If in monitor mode, show the ActiveCountdowns component
+  if (isMonitorMode) {
+    return <ActiveCountdowns />;
+  }
 
   // If no active timer, display a message
   if (!activeTimer) {
