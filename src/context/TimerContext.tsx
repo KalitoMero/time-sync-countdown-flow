@@ -32,6 +32,10 @@ interface TimerContextType {
 
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
+const LOCAL_STORAGE_KEY = 'workshop-timer-data';
+const TIMERS_STORAGE_KEY = 'workshop-all-timers';
+const MODE_STORAGE_KEY = 'workshop-timer-mode'; // Added this constant
+
 const defaultUsers: User[] = [
   { id: '1', name: 'John Smith' },
   { id: '2', name: 'Emma Johnson' },
@@ -42,9 +46,6 @@ const defaultUsers: User[] = [
   { id: '7', name: 'David Martinez' },
   { id: '8', name: 'Lisa Anderson' },
 ];
-
-const LOCAL_STORAGE_KEY = 'workshop-timer-data';
-const TIMERS_STORAGE_KEY = 'workshop-all-timers';
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users] = useState<User[]>(defaultUsers);
