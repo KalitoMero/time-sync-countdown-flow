@@ -1,6 +1,8 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { toast } from 'sonner';
+import { useTimerLogic } from '@/hooks/useTimerLogic';
+import { useStorageSync } from '@/hooks/useStorageSync';
 
 export interface User {
   id: string;
@@ -43,41 +45,15 @@ const defaultUsers: User[] = [
 
 const LOCAL_STORAGE_KEY = 'workshop-timer-data';
 const TIMERS_STORAGE_KEY = 'workshop-all-timers';
-const MODE_STORAGE_KEY = 'workshop-timer-mode';
 
 export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users] = useState<User[]>(defaultUsers);
   const [activeTimer, setActiveTimerState] = useState<TimerData | null>(null);
   const [activeTimers, setActiveTimers] = useState<TimerData[]>([]);
   const [isMonitorMode, setIsMonitorMode] = useState<boolean>(false);
-  const [remainingTime, setRemainingTime] = useState<number | null>(null);
 
-  useEffect(() => {
-    const storedTimerData = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedTimerData) {
-      try {
-        const parsedData = JSON.parse(storedTimerData) as TimerData;
-        setActiveTimerState(parsedData);
-      } catch (error) {
-        console.error('Error parsing stored timer data:', error);
-      }
-    }
-
-    const storedAllTimers = localStorage.getItem(TIMERS_STORAGE_KEY);
-    if (storedAllTimers) {
-      try {
-        const parsedTimers = JSON.parse(storedAllTimers) as TimerData[];
-        setActiveTimers(parsedTimers);
-      } catch (error) {
-        console.error('Error parsing all timers data:', error);
-      }
-    }
-
-    const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
-    if (storedMode) {
-      setIsMonitorMode(storedMode === 'true');
-    }
-  }, []);
+  useStorageSync(setActiveTimerState, setActiveTimers, setIsMonitorMode);
+  const { remainingTime } = useTimerLogic(activeTimer);
 
   const setActiveTimer = (timer: TimerData | null) => {
     setActiveTimerState(timer);
@@ -122,88 +98,6 @@ export const TimerProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsMonitorMode(newMode);
     localStorage.setItem(MODE_STORAGE_KEY, String(newMode));
   };
-
-  useEffect(() => {
-    if (!activeTimer) {
-      setRemainingTime(null);
-      return;
-    }
-
-    const updateRemainingTime = () => {
-      const now = Date.now();
-      
-      if (activeTimer.isMorgenVor8) {
-        // Für "morgen vor 8" Timer setzen wir keine Restzeit
-        return;
-      }
-
-      const timeLeft = Math.max(0, activeTimer.endTime - now);
-      setRemainingTime(timeLeft);
-    };
-
-    updateRemainingTime();
-    const interval = setInterval(updateRemainingTime, 1000);
-    return () => clearInterval(interval);
-  }, [activeTimer]);
-
-  // Separate useEffect für die Aktualisierung aller Timer
-  useEffect(() => {
-    const updateAllTimers = () => {
-      const now = Date.now();
-      
-      setActiveTimers(prevTimers => {
-        return prevTimers.map(timer => {
-          // "morgen vor 8" Timer nicht aktualisieren
-          if (timer.isMorgenVor8) {
-            return timer;
-          }
-          
-          // Für normale Timer die verbleibende Zeit berechnen
-          const timerTimeLeft = Math.max(0, timer.endTime - now);
-          return {
-            ...timer,
-            remainingTime: timerTimeLeft
-          };
-        });
-      });
-    };
-
-    // Initial ausführen und dann alle Sekunde aktualisieren
-    updateAllTimers();
-    const interval = setInterval(updateAllTimers, 1000);
-    return () => clearInterval(interval);
-  }, []); // Leeres Dependency Array sorgt dafür, dass dies nur einmal beim Mounten passiert
-
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === LOCAL_STORAGE_KEY) {
-        if (e.newValue) {
-          try {
-            const parsedData = JSON.parse(e.newValue) as TimerData;
-            setActiveTimerState(parsedData);
-          } catch (error) {
-            console.error('Error parsing stored timer data from event:', error);
-          }
-        } else {
-          setActiveTimerState(null);
-        }
-      } else if (e.key === TIMERS_STORAGE_KEY) {
-        if (e.newValue) {
-          try {
-            const parsedTimers = JSON.parse(e.newValue) as TimerData[];
-            setActiveTimers(parsedTimers);
-          } catch (error) {
-            console.error('Error parsing all timers data from event:', error);
-          }
-        } else {
-          setActiveTimers([]);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   return (
     <TimerContext.Provider 
