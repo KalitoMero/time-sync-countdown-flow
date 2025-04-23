@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Home, Clock } from 'lucide-react';
+import { Home, Clock, X } from 'lucide-react';
 import ActiveCountdowns from './ActiveCountdowns';
 
 const CountdownDisplay: React.FC = () => {
@@ -114,11 +115,11 @@ const CountdownDisplay: React.FC = () => {
           </div>
         </CardContent>
         {!isMonitorMode && (
-          <CardFooter className="flex justify-around py-4">
+          <CardFooter className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4 py-4">
             <Button
               size="lg"
               variant="outline"
-              className="border-workshop text-workshop hover:bg-workshop hover:text-white"
+              className="w-full sm:w-auto border-workshop text-workshop hover:bg-workshop hover:text-white"
               onClick={() => navigate('/')}
             >
               <Home className="mr-2 h-5 w-5" /> Zur Startseite
@@ -126,12 +127,13 @@ const CountdownDisplay: React.FC = () => {
             <Button
               size="lg"
               variant="destructive"
+              className="w-full sm:w-auto"
               onClick={() => {
                 navigate('/');
                 navigate(0); // Force a complete refresh
               }}
             >
-              Timer abbrechen
+              <X className="mr-2 h-5 w-5" /> Timer abbrechen
             </Button>
           </CardFooter>
         )}
@@ -141,3 +143,4 @@ const CountdownDisplay: React.FC = () => {
 };
 
 export default CountdownDisplay;
+
