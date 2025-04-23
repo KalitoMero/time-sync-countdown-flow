@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
@@ -14,7 +13,7 @@ const TimeSelection: React.FC = () => {
   const userName = searchParams.get('name') || 'Unbekannter Mitarbeiter';
   const { setActiveTimer } = useTimer();
 
-  const timeOptions = [15, 30, 45, 60, 90, 120];
+  const timeOptions = [45, 60, 90, 120];
 
   const handleTimeSelect = (duration: number | 'morgen') => {
     if (!userId) return;
