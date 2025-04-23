@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useTimer } from '@/context/TimerContext';
+import { useTimers } from '@/hooks/useTimers';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -11,48 +11,29 @@ const TimeSelection: React.FC = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const userName = searchParams.get('name') || 'Unbekannter Mitarbeiter';
-  const { setActiveTimer } = useTimer();
+  const { createTimer } = useTimers();
 
   const timeOptions = [45, 60, 90, 120];
 
   const handleTimeSelect = (duration: number | 'morgen') => {
-    if (!userId) return;
-    
-    const now = Date.now();
+    if (!userId || !userName) return;
     
     if (duration === 'morgen') {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(7, 59, 0, 0);
-
-      const timerData = {
-        userId,
-        userName,
-        startTime: now,
-        duration: -1, // Special flag for "morgen vor 8"
-        endTime: tomorrow.getTime(),
-        isMorgenVor8: true
-      };
-
-      setActiveTimer(timerData);
-      navigate('/countdown');
+      createTimer.mutate({
+        mitarbeiter: userName,
+        special_case: 'morgen vor 8'
+      }, {
+        onSuccess: () => navigate('/countdown')
+      });
       return;
     }
 
-    const durationMs = duration * 60 * 1000;
-    const endTime = now + durationMs;
-
-    const timerData = {
-      userId,
-      userName,
-      startTime: now,
-      duration,
-      endTime,
-      isMorgenVor8: false
-    };
-
-    setActiveTimer(timerData);
-    navigate('/countdown');
+    createTimer.mutate({
+      mitarbeiter: userName,
+      dauer_min: duration
+    }, {
+      onSuccess: () => navigate('/countdown')
+    });
   };
 
   return (

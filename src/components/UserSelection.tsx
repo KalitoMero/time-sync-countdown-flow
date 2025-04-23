@@ -5,25 +5,12 @@ import { Button } from '@/components/ui/button';
 import { useTimer } from '@/context/TimerContext';
 import SettingsDialog from './SettingsDialog';
 import ActiveCountdowns from './ActiveCountdowns';
+import { useEmployees } from '@/hooks/useEmployees';
 
 const UserSelection: React.FC = () => {
   const navigate = useNavigate();
   const { isMonitorMode } = useTimer();
-
-  // Get employees from localStorage or use default
-  const getEmployees = () => {
-    const storedEmployees = localStorage.getItem('employees');
-    if (storedEmployees) {
-      return JSON.parse(storedEmployees);
-    }
-    return [
-      { id: '1', name: 'Max Mustermann' },
-      { id: '2', name: 'Anna Schmidt' },
-      { id: '3', name: 'Peter Meyer' },
-    ];
-  };
-
-  const employees = getEmployees();
+  const { employees, isLoading } = useEmployees();
 
   const handleUserSelect = (userId: string, userName: string) => {
     navigate(`/time-selection/${userId}?name=${encodeURIComponent(userName)}`);
@@ -31,6 +18,10 @@ const UserSelection: React.FC = () => {
 
   if (isMonitorMode) {
     return <ActiveCountdowns />;
+  }
+
+  if (isLoading) {
+    return <div>Lade Mitarbeiter...</div>;
   }
 
   return (
@@ -45,7 +36,7 @@ const UserSelection: React.FC = () => {
             {employees.map((employee) => (
               <Button
                 key={employee.id}
-                onClick={() => handleUserSelect(employee.id, employee.name)}
+                onClick={() => handleUserSelect(String(employee.id), employee.name)}
                 className="h-24 text-xl bg-workshop hover:bg-workshop-light"
               >
                 {employee.name}

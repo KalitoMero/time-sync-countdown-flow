@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -19,33 +18,15 @@ import {
 } from "@/components/ui/table";
 import { Settings, UserPlus, UserMinus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Employee {
-  id: string;
-  name: string;
-}
+import { useEmployees } from '@/hooks/useEmployees';
 
 const SettingsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState('');
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-
-  // Get employees from localStorage or use default
-  const getEmployees = (): Employee[] => {
-    const storedEmployees = localStorage.getItem('employees');
-    if (storedEmployees) {
-      return JSON.parse(storedEmployees);
-    }
-    return [
-      { id: '1', name: 'Max Mustermann' },
-      { id: '2', name: 'Anna Schmidt' },
-      { id: '3', name: 'Peter Meyer' },
-    ];
-  };
-
-  const [employees, setEmployees] = useState<Employee[]>(getEmployees());
+  const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
+  const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
 
   const handleAuthentication = () => {
     if (password === '2034') {
@@ -59,35 +40,21 @@ const SettingsDialog = () => {
 
   const handleAddEmployee = () => {
     if (newEmployeeName.trim()) {
-      const newEmployee = {
-        id: Date.now().toString(),
-        name: newEmployeeName.trim()
-      };
-      const updatedEmployees = [...employees, newEmployee];
-      setEmployees(updatedEmployees);
-      localStorage.setItem('employees', JSON.stringify(updatedEmployees));
-      setNewEmployeeName('');
-      toast.success(`Mitarbeiter ${newEmployeeName} wurde hinzugefügt`);
+      addEmployee.mutate(newEmployeeName.trim(), {
+        onSuccess: () => setNewEmployeeName('')
+      });
     }
   };
 
-  const handleDeleteEmployee = (id: string) => {
-    const updatedEmployees = employees.filter(emp => emp.id !== id);
-    setEmployees(updatedEmployees);
-    localStorage.setItem('employees', JSON.stringify(updatedEmployees));
-    toast.success('Mitarbeiter wurde gelöscht');
+  const handleDeleteEmployee = (id: number) => {
+    deleteEmployee.mutate(id);
   };
 
-  const handleEditEmployee = (employee: Employee) => {
+  const handleEditEmployee = (employee: { id: number; name: string }) => {
     if (editingEmployee?.id === employee.id) {
-      const updatedEmployees = employees.map(emp => 
-        emp.id === employee.id ? { ...emp, name: newEmployeeName } : emp
-      );
-      setEmployees(updatedEmployees);
-      localStorage.setItem('employees', JSON.stringify(updatedEmployees));
+      updateEmployee.mutate({ id: employee.id, name: newEmployeeName });
       setEditingEmployee(null);
       setNewEmployeeName('');
-      toast.success('Mitarbeiter wurde aktualisiert');
     } else {
       setEditingEmployee(employee);
       setNewEmployeeName(employee.name);
