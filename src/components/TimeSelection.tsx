@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTimers } from '@/hooks/useTimers';
@@ -13,7 +14,7 @@ const TimeSelection: React.FC = () => {
   const userName = searchParams.get('name') || 'Unbekannter Mitarbeiter';
   const { createTimer } = useTimers();
 
-  const timeOptions = [45, 60, 90, 120];
+  const timeOptions = [30, 45, 60, 90, 120]; // Added 30 to make sure it's an option
 
   const handleTimeSelect = (duration: number | 'morgen') => {
     if (!userId || !userName) return;
@@ -23,16 +24,23 @@ const TimeSelection: React.FC = () => {
         mitarbeiter: userName,
         special_case: 'morgen vor 8'
       }, {
-        onSuccess: () => navigate('/countdown')
+        onSuccess: (data) => {
+          console.log('Timer created with morgen vor 8:', data);
+          navigate('/countdown');
+        }
       });
       return;
     }
 
+    // For regular durations, ensure we're passing the correct duration value
     createTimer.mutate({
       mitarbeiter: userName,
       dauer_min: duration
     }, {
-      onSuccess: () => navigate('/countdown')
+      onSuccess: (data) => {
+        console.log('Timer created with duration:', duration, 'data:', data);
+        navigate('/countdown');
+      }
     });
   };
 

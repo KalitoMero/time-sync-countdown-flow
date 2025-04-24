@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,11 @@ import ActiveCountdowns from './ActiveCountdowns';
 const CountdownDisplay: React.FC = () => {
   const { activeTimer, isMonitorMode } = useTimer();
   const navigate = useNavigate();
+
+  // Debug output to verify we have correct timer data
+  useEffect(() => {
+    console.log('Current activeTimer:', activeTimer);
+  }, [activeTimer]);
 
   // Monitor Mode: Show ActiveCountdowns component
   if (isMonitorMode) {
