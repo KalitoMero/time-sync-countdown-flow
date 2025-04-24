@@ -12,11 +12,15 @@ import ActiveCountdowns from './ActiveCountdowns';
 const CountdownDisplay: React.FC = () => {
   const { activeTimer, isMonitorMode } = useTimer();
   const navigate = useNavigate();
+  
+  console.log('activeTimer in CountdownDisplay:', activeTimer);
 
   const { formattedTime, isExpired, progress } = useCountdown({
-    startTime: activeTimer?.startTime || '',
+    startTime: activeTimer?.startTime || 0,
     durationMinutes: activeTimer?.duration || 0
   });
+
+  console.log('countdown values:', { formattedTime, isExpired, progress });
 
   // If in monitor mode, show the ActiveCountdowns component
   if (isMonitorMode) {
