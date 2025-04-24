@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface CountdownProps {
   startTime: string;
@@ -9,6 +9,11 @@ interface CountdownProps {
 export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => {
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
   const [isExpired, setIsExpired] = useState(false);
+  const [formattedTime, setFormattedTime] = useState("--:--");
+  const [isUnderTenMinutes, setIsUnderTenMinutes] = useState(false);
+  
+  // Use a ref to store the interval ID
+  const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     const calculateRemaining = () => {
@@ -19,26 +24,36 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
       
       setRemainingTime(remaining);
       setIsExpired(remaining <= 0);
+      setIsUnderTenMinutes(remaining > 0 && remaining < 600000);
+      setFormattedTime(formatTime(remaining));
     };
 
+    const formatTime = (ms: number) => {
+      if (ms <= 0) return "00:00";
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Initial calculation
     calculateRemaining();
-    const interval = setInterval(calculateRemaining, 1000);
+    
+    // Set up interval
+    intervalRef.current = window.setInterval(calculateRemaining, 1000);
 
-    return () => clearInterval(interval);
+    // Clean up interval on unmount
+    return () => {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+      }
+    };
   }, [startTime, durationMinutes]);
-
-  const formatTime = (ms: number) => {
-    if (ms <= 0) return "00:00";
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
 
   return {
     remainingTime,
     isExpired,
-    formattedTime: remainingTime !== null ? formatTime(remainingTime) : "--:--",
-    isUnderTenMinutes: remainingTime !== null && remainingTime < 600000
+    formattedTime,
+    isUnderTenMinutes
   };
 };
