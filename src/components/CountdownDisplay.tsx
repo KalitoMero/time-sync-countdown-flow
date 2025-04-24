@@ -14,7 +14,7 @@ const CountdownDisplay: React.FC = () => {
   const navigate = useNavigate();
 
   const { formattedTime, isExpired, remainingTime } = useCountdown({
-    startTime: activeTimer?.startTime || '',
+    startTime: activeTimer?.startTime ? activeTimer.startTime.toString() : '', // Convert to string
     durationMinutes: activeTimer?.duration || 0
   });
 
