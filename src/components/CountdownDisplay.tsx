@@ -6,11 +6,26 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Home, Clock, X } from 'lucide-react';
+import { useCountdown } from '@/hooks/useCountdown';
 import ActiveCountdowns from './ActiveCountdowns';
 
 const CountdownDisplay: React.FC = () => {
-  const { activeTimer, remainingTime, isMonitorMode } = useTimer();
+  const { activeTimer, isMonitorMode } = useTimer();
   const navigate = useNavigate();
+
+  const { formattedTime, isExpired, remainingTime } = useCountdown({
+    startTime: activeTimer?.startTime || '',
+    durationMinutes: activeTimer?.duration || 0
+  });
+
+  // Calculate progress percentage (0% to 100%)
+  const calculateProgress = () => {
+    if (!activeTimer || !remainingTime) return 100;
+    
+    const totalDuration = activeTimer.duration * 60 * 1000;
+    const elapsed = totalDuration - remainingTime;
+    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+  };
 
   // If in monitor mode, show the ActiveCountdowns component
   if (isMonitorMode) {
@@ -30,87 +45,49 @@ const CountdownDisplay: React.FC = () => {
           <CardContent className="p-8 text-center">
             <Clock className="w-24 h-24 mx-auto text-workshop-light mb-6" />
             <p className="text-xl mb-6">
-              {isMonitorMode 
-                ? "Warten auf einen Benutzer, der einen Timer startet..." 
-                : "Bitte wählen Sie einen Benutzer und stellen Sie einen Timer ein."}
+              Bitte wählen Sie einen Benutzer und stellen Sie einen Timer ein.
             </p>
           </CardContent>
-          {!isMonitorMode && (
-            <CardFooter className="flex justify-center py-4">
-              <Button
-                size="lg"
-                className="bg-workshop hover:bg-workshop-light text-white"
-                onClick={() => navigate('/')}
-              >
-                <Home className="mr-2 h-5 w-5" /> Zur Startseite
-              </Button>
-            </CardFooter>
-          )}
+          <CardFooter className="flex justify-center py-4">
+            <Button
+              size="lg"
+              className="bg-workshop hover:bg-workshop-light text-white"
+              onClick={() => navigate('/')}
+            >
+              <Home className="mr-2 h-5 w-5" /> Zur Startseite
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     );
   }
 
-  // Format the remaining time nicely
-  const formatTime = () => {
-    if (remainingTime === null) return '00:00';
-    
-    const totalSeconds = Math.floor(remainingTime / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  // Calculate progress percentage (inverted - starts at 100%, goes to 0%)
-  const calculateProgress = () => {
-    if (!activeTimer || remainingTime === null) return 0;
-    
-    const totalDuration = activeTimer.duration * 60 * 1000;
-    const elapsed = totalDuration - remainingTime;
-    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-  };
-
-  // Determine the progress color based on remaining time
-  const getProgressColor = () => {
-    if (!activeTimer || remainingTime === null) return 'bg-workshop-light';
-    
-    const totalDuration = activeTimer.duration * 60 * 1000;
-    const percentage = remainingTime / totalDuration;
-    
-    if (percentage > 0.5) return 'bg-workshop-success';
-    if (percentage > 0.25) return 'bg-workshop-accent';
-    return 'bg-workshop-danger';
-  };
-
   return (
     <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-[80vh]">
       <Card className="w-full max-w-2xl border-workshop-light border-2">
-        <CardHeader className={`${remainingTime && remainingTime <= 300000 ? 'bg-workshop-danger animate-pulse-subtle' : 'bg-workshop'} text-white`}>
+        <CardHeader className="bg-workshop text-white">
           <CardTitle className="text-3xl font-bold text-center">
             {activeTimer.userName}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8">
           <div className="text-center">
-            <div className={`text-7xl font-mono font-bold mb-8 ${
-              remainingTime && remainingTime <= 300000 ? 'text-workshop-danger' : 'text-workshop'
-            }`}>
-              {formatTime()}
+            <div className="text-7xl font-mono font-bold mb-8 text-workshop">
+              {formattedTime}
             </div>
             
             <div className="mb-2 text-sm font-medium">
-              Progress: {Math.round(calculateProgress())}%
+              Fortschritt: {Math.round(calculateProgress())}%
             </div>
             <Progress 
               value={calculateProgress()} 
-              className={`h-4 ${getProgressColor()}`}
+              className={`h-4 ${isExpired ? 'bg-black' : 'bg-workshop'}`}
             />
             
             <div className="mt-8 text-lg">
-              <p><span className="font-medium">Started:</span> {new Date(activeTimer.startTime).toLocaleTimeString()}</p>
-              <p><span className="font-medium">Estimated finish:</span> {new Date(activeTimer.endTime).toLocaleTimeString()}</p>
-              <p className="mt-2"><span className="font-medium">Duration:</span> {activeTimer.duration} minutes</p>
+              <p><span className="font-medium">Gestartet:</span> {new Date(activeTimer.startTime).toLocaleTimeString()}</p>
+              <p><span className="font-medium">Voraussichtliches Ende:</span> {new Date(activeTimer.endTime).toLocaleTimeString()}</p>
+              <p className="mt-2"><span className="font-medium">Dauer:</span> {activeTimer.duration} Minuten</p>
             </div>
           </div>
         </CardContent>
@@ -130,7 +107,7 @@ const CountdownDisplay: React.FC = () => {
               className="w-full sm:w-auto"
               onClick={() => {
                 navigate('/');
-                navigate(0); // Force a complete refresh
+                navigate(0);
               }}
             >
               <X className="mr-2 h-5 w-5" /> Timer abbrechen
@@ -143,4 +120,3 @@ const CountdownDisplay: React.FC = () => {
 };
 
 export default CountdownDisplay;
-
