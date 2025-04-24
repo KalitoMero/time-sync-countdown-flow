@@ -12,19 +12,10 @@ const CountdownDisplay: React.FC = () => {
   const { activeTimer, isMonitorMode } = useTimer();
   const navigate = useNavigate();
 
-  const { formattedTime, isExpired, remainingTime } = useCountdown({
+  const { formattedTime, isExpired, progress } = useCountdown({
     startTime: activeTimer?.startTime ? new Date(activeTimer.startTime).toISOString() : '',
     durationMinutes: activeTimer?.duration || 0
   });
-
-  // Calculate progress percentage (0% to 100%)
-  const calculateProgress = () => {
-    if (!activeTimer || !remainingTime) return 100;
-    
-    const totalDuration = activeTimer.duration * 60 * 1000;
-    const elapsed = totalDuration - remainingTime;
-    return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-  };
 
   // If in monitor mode, show the ActiveCountdowns component
   if (isMonitorMode) {
@@ -66,7 +57,7 @@ const CountdownDisplay: React.FC = () => {
       <Card className="w-full max-w-2xl border-workshop-light border-2">
         <CardHeader className="bg-workshop text-white">
           <CardTitle className="text-3xl font-bold text-center">
-            {activeTimer.userName}
+            {activeTimer?.userName}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8">
@@ -76,17 +67,17 @@ const CountdownDisplay: React.FC = () => {
             </div>
             
             <div className="mb-2 text-sm font-medium">
-              Fortschritt: {Math.round(calculateProgress())}%
+              Fortschritt: {Math.round(progress)}%
             </div>
             <Progress 
-              value={calculateProgress()} 
+              value={progress} 
               className={`h-4 ${isExpired ? 'bg-black' : 'bg-workshop'}`}
             />
             
             <div className="mt-8 text-lg">
-              <p><span className="font-medium">Gestartet:</span> {new Date(activeTimer.startTime).toLocaleTimeString()}</p>
-              <p><span className="font-medium">Voraussichtliches Ende:</span> {new Date(activeTimer.endTime).toLocaleTimeString()}</p>
-              <p className="mt-2"><span className="font-medium">Dauer:</span> {activeTimer.duration} Minuten</p>
+              <p><span className="font-medium">Gestartet:</span> {activeTimer && new Date(activeTimer.startTime).toLocaleTimeString()}</p>
+              <p><span className="font-medium">Voraussichtliches Ende:</span> {activeTimer && new Date(activeTimer.endTime).toLocaleTimeString()}</p>
+              <p className="mt-2"><span className="font-medium">Dauer:</span> {activeTimer?.duration} Minuten</p>
             </div>
           </div>
         </CardContent>

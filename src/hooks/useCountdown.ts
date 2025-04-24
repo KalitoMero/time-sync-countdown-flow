@@ -11,6 +11,7 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
   const [isExpired, setIsExpired] = useState(false);
   const [formattedTime, setFormattedTime] = useState("--:--");
   const [isUnderTenMinutes, setIsUnderTenMinutes] = useState(false);
+  const [progress, setProgress] = useState(0);
   
   // Use a ref to store the interval ID
   const intervalRef = useRef<number | null>(null);
@@ -26,12 +27,18 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
         const start = new Date(startTime).getTime();
         const end = start + (durationMinutes * 60 * 1000);
         const now = Date.now();
-        const remaining = end - now;
+        const remaining = Math.max(0, end - now);
+        const totalDuration = durationMinutes * 60 * 1000;
+        const elapsed = Math.min(totalDuration, totalDuration - remaining);
+        
+        // Calculate progress percentage
+        const currentProgress = Math.min(100, (elapsed / totalDuration) * 100);
         
         setRemainingTime(remaining);
         setIsExpired(remaining <= 0);
         setIsUnderTenMinutes(remaining > 0 && remaining < 600000);
-        setFormattedTime(formatTime(remaining));
+        setFormattedTime(remaining <= 0 ? "00:00" : formatTime(remaining));
+        setProgress(currentProgress);
       } catch (error) {
         console.error("Error calculating countdown:", error);
         setFormattedTime("--:--");
@@ -39,7 +46,6 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
     };
 
     const formatTime = (ms: number) => {
-      if (ms <= 0) return "00:00";
       const totalSeconds = Math.floor(ms / 1000);
       const minutes = Math.floor(totalSeconds / 60);
       const seconds = totalSeconds % 60;
@@ -64,6 +70,7 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
     remainingTime,
     isExpired,
     formattedTime,
-    isUnderTenMinutes
+    isUnderTenMinutes,
+    progress
   };
 };
