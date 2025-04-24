@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 interface CountdownProps {
-  startTime: string;
+  startTime: string | number;
   durationMinutes: number;
 }
 
@@ -23,8 +23,8 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
       }
       
       try {
-        // 1. Get start time
-        const start = new Date(startTime).getTime();
+        // 1. Get start time as timestamp
+        const start = typeof startTime === 'string' ? new Date(startTime).getTime() : Number(startTime);
         
         // 2. Calculate end time
         const end = start + (durationMinutes * 60 * 1000);
@@ -35,7 +35,7 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
         
         // Calculate progress
         const totalDuration = durationMinutes * 60 * 1000;
-        const elapsed = Math.min(totalDuration, totalDuration - remaining);
+        const elapsed = totalDuration - remaining;
         const currentProgress = Math.min(100, (elapsed / totalDuration) * 100);
         
         // Update states

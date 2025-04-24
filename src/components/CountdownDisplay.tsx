@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimer } from '@/context/TimerContext';
@@ -13,7 +14,7 @@ const CountdownDisplay: React.FC = () => {
   const navigate = useNavigate();
 
   const { formattedTime, isExpired, progress } = useCountdown({
-    startTime: activeTimer?.startTime ? new Date(activeTimer.startTime).toISOString() : '',
+    startTime: activeTimer?.startTime || '',
     durationMinutes: activeTimer?.duration || 0
   });
 
