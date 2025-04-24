@@ -13,7 +13,6 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
   const [isUnderTenMinutes, setIsUnderTenMinutes] = useState(false);
   const [progress, setProgress] = useState(0);
   
-  // Use a ref to store the interval ID
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -24,21 +23,32 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
       }
       
       try {
+        // 1. Get start time
         const start = new Date(startTime).getTime();
+        
+        // 2. Calculate end time
         const end = start + (durationMinutes * 60 * 1000);
+        
+        // 3. Calculate remaining time
         const now = Date.now();
         const remaining = Math.max(0, end - now);
+        
+        // Calculate progress
         const totalDuration = durationMinutes * 60 * 1000;
         const elapsed = Math.min(totalDuration, totalDuration - remaining);
-        
-        // Calculate progress percentage
         const currentProgress = Math.min(100, (elapsed / totalDuration) * 100);
         
+        // Update states
         setRemainingTime(remaining);
         setIsExpired(remaining <= 0);
         setIsUnderTenMinutes(remaining > 0 && remaining < 600000);
+        
+        // 4. Format time as MM:SS
+        // 5. Show 00:00 when expired
         setFormattedTime(remaining <= 0 ? "00:00" : formatTime(remaining));
-        setProgress(currentProgress);
+        
+        // 6. Update progress bar
+        setProgress(remaining <= 0 ? 100 : currentProgress);
       } catch (error) {
         console.error("Error calculating countdown:", error);
         setFormattedTime("--:--");
@@ -55,10 +65,9 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
     // Initial calculation
     calculateRemaining();
     
-    // Set up interval
+    // 3. Update every 1000ms
     intervalRef.current = window.setInterval(calculateRemaining, 1000);
 
-    // Clean up interval on unmount
     return () => {
       if (intervalRef.current !== null) {
         window.clearInterval(intervalRef.current);
