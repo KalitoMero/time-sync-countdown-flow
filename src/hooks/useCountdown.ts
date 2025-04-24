@@ -17,15 +17,25 @@ export const useCountdown = ({ startTime, durationMinutes }: CountdownProps) => 
 
   useEffect(() => {
     const calculateRemaining = () => {
-      const start = new Date(startTime).getTime();
-      const end = start + (durationMinutes * 60 * 1000);
-      const now = Date.now();
-      const remaining = end - now;
+      if (!startTime || !durationMinutes) {
+        setFormattedTime("--:--");
+        return;
+      }
       
-      setRemainingTime(remaining);
-      setIsExpired(remaining <= 0);
-      setIsUnderTenMinutes(remaining > 0 && remaining < 600000);
-      setFormattedTime(formatTime(remaining));
+      try {
+        const start = new Date(startTime).getTime();
+        const end = start + (durationMinutes * 60 * 1000);
+        const now = Date.now();
+        const remaining = end - now;
+        
+        setRemainingTime(remaining);
+        setIsExpired(remaining <= 0);
+        setIsUnderTenMinutes(remaining > 0 && remaining < 600000);
+        setFormattedTime(formatTime(remaining));
+      } catch (error) {
+        console.error("Error calculating countdown:", error);
+        setFormattedTime("--:--");
+      }
     };
 
     const formatTime = (ms: number) => {
