@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -16,9 +17,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { Settings, UserPlus, UserMinus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmployees } from '@/hooks/useEmployees';
+import TimerStatistics from './TimerStatistics';
 
 const SettingsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -26,6 +34,7 @@ const SettingsDialog = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState('');
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState('employees');
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
 
   const handleAuthentication = () => {
@@ -95,51 +104,64 @@ const SettingsDialog = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Neuer Mitarbeiter"
-                value={newEmployeeName}
-                onChange={(e) => setNewEmployeeName(e.target.value)}
-              />
-              <Button onClick={handleAddEmployee} disabled={!newEmployeeName.trim()}>
-                {editingEmployee ? 'Aktualisieren' : 'Hinzufügen'}
-                {editingEmployee ? <Pencil className="ml-2 h-4 w-4" /> : <UserPlus className="ml-2 h-4 w-4" />}
-              </Button>
-            </div>
+          <Tabs defaultValue="employees" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="employees">Mitarbeiter</TabsTrigger>
+              <TabsTrigger value="statistics">Statistik</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="employees">
+              <div className="space-y-6">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Neuer Mitarbeiter"
+                    value={newEmployeeName}
+                    onChange={(e) => setNewEmployeeName(e.target.value)}
+                  />
+                  <Button onClick={handleAddEmployee} disabled={!newEmployeeName.trim()}>
+                    {editingEmployee ? 'Aktualisieren' : 'Hinzufügen'}
+                    {editingEmployee ? <Pencil className="ml-2 h-4 w-4" /> : <UserPlus className="ml-2 h-4 w-4" />}
+                  </Button>
+                </div>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell>{employee.name}</TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleEditEmployee(employee)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => handleDeleteEmployee(employee.id)}
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="text-right">Aktionen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {employees.map((employee) => (
+                      <TableRow key={employee.id}>
+                        <TableCell>{employee.name}</TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEditEmployee(employee)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleDeleteEmployee(employee.id)}
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="statistics">
+              <TimerStatistics />
+            </TabsContent>
+          </Tabs>
         )}
       </DialogContent>
     </Dialog>

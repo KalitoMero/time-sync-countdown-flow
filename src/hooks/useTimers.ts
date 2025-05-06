@@ -91,12 +91,20 @@ export const useTimers = () => {
 
   const completeTimer = useMutation({
     mutationFn: async (id: string) => {
+      // Update timer status and set confirmed_at to current timestamp
+      const now = new Date();
+      console.log(`Completing timer ${id} at ${now.toISOString()}`);
+      
       const { error } = await supabase
         .from('timer')
-        .update({ status: 'beendet' })
+        .update({ 
+          status: 'beendet',
+          confirmed_at: now.toISOString()
+        })
         .eq('id', id);
 
       if (error) {
+        console.error('Error completing timer:', error);
         toast.error('Fehler beim Beenden des Timers');
         throw error;
       }
