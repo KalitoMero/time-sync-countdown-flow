@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type FilterPeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -155,40 +156,42 @@ const TimerStatistics: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Mitarbeiter</TableHead>
-              <TableHead>Erstellt am</TableHead>
-              <TableHead>Bestätigt am</TableHead>
-              <TableHead>Dauer (min)</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTimers.length === 0 ? (
+        <ScrollArea className="h-[400px] w-full">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  Keine Daten für diesen Zeitraum vorhanden
-                </TableCell>
+                <TableHead>Mitarbeiter</TableHead>
+                <TableHead>Erstellt am</TableHead>
+                <TableHead>Bestätigt am</TableHead>
+                <TableHead>Dauer (min)</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ) : (
-              filteredTimers.map((timer) => (
-                <TableRow key={timer.id}>
-                  <TableCell>{timer.mitarbeiter}</TableCell>
-                  <TableCell>{format(new Date(timer.created_at), 'dd.MM.yyyy HH:mm')}</TableCell>
-                  <TableCell>
-                    {timer.confirmed_at 
-                      ? format(new Date(timer.confirmed_at), 'dd.MM.yyyy HH:mm')
-                      : '—'}
+            </TableHeader>
+            <TableBody>
+              {filteredTimers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    Keine Daten für diesen Zeitraum vorhanden
                   </TableCell>
-                  <TableCell>{timer.dauer_min || '—'}</TableCell>
-                  <TableCell>{renderTimerStatus(timer)}</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                filteredTimers.map((timer) => (
+                  <TableRow key={timer.id}>
+                    <TableCell>{timer.mitarbeiter}</TableCell>
+                    <TableCell>{format(new Date(timer.created_at), 'dd.MM.yyyy HH:mm')}</TableCell>
+                    <TableCell>
+                      {timer.confirmed_at 
+                        ? format(new Date(timer.confirmed_at), 'dd.MM.yyyy HH:mm')
+                        : '—'}
+                    </TableCell>
+                    <TableCell>{timer.dauer_min || '—'}</TableCell>
+                    <TableCell>{renderTimerStatus(timer)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </ScrollArea>
       </div>
     </div>
   );

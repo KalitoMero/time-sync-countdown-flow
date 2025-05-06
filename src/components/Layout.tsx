@@ -21,14 +21,14 @@ const Layout: React.FC = () => {
   }, [isMonitorMode, navigate, location.pathname]);
   
   return (
-    <div className="min-h-screen bg-workshop-background">
-      <div className="py-10 px-4">
+    <div className="min-h-screen max-h-screen overflow-hidden bg-workshop-background">
+      <div className="py-10 px-4 h-full flex flex-col">
         <header className="mb-8 flex justify-between items-center">
           <h1 className="text-4xl font-bold text-workshop text-center flex-grow">Schleifzeit</h1>
           <SettingsDialog />
         </header>
 
-        <main>
+        <main className="flex-grow overflow-auto">
           <Outlet />
         </main>
 
