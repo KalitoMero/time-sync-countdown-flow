@@ -25,7 +25,7 @@ const Layout: React.FC = () => {
       <div className="py-10 px-4 h-full flex flex-col">
         <header className="mb-8 flex justify-between items-center">
           <h1 className="text-4xl font-bold text-workshop text-center flex-grow">Schleifzeit</h1>
-          <SettingsDialog />
+          {!isMonitorMode && <SettingsDialog />}
         </header>
 
         <main className="flex-grow overflow-auto">

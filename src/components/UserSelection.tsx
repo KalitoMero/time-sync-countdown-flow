@@ -1,9 +1,9 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTimer } from '@/context/TimerContext';
-import SettingsDialog from './SettingsDialog';
 import ActiveCountdowns from './ActiveCountdowns';
 import { useEmployees } from '@/hooks/useEmployees';
 
@@ -29,7 +29,6 @@ const UserSelection: React.FC = () => {
       <Card className="max-w-4xl mx-auto">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7 bg-workshop text-white">
           <CardTitle className="text-3xl font-bold">Mitarbeiter auswählen</CardTitle>
-          <SettingsDialog />
         </CardHeader>
         <CardContent className="grid gap-4 p-6">
           <div className="grid grid-cols-2 gap-4">
