@@ -28,14 +28,27 @@ import { toast } from 'sonner';
 import { useEmployees } from '@/hooks/useEmployees';
 import TimerStatistics from './TimerStatistics';
 
+const STORAGE_KEY = 'settings_authenticated';
+
 const SettingsDialog = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Always start unauthenticated
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    // Check if authenticated in localStorage
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === 'true';
+  });
   const [newEmployeeName, setNewEmployeeName] = useState('');
   const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState('employees');
   const { employees, addEmployee, updateEmployee, deleteEmployee } = useEmployees();
+
+  // Save authentication state
+  useEffect(() => {
+    if (isAuthenticated) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+    }
+  }, [isAuthenticated]);
 
   const handleAuthentication = () => {
     if (password === '2034') {
@@ -70,19 +83,21 @@ const SettingsDialog = () => {
     }
   };
 
-  // Reset authentication state and other states when dialog is closed
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    if (!open) {
-      // Reset states when dialog is closed
-      setIsAuthenticated(false);
-      setEditingEmployee(null);
-      setNewEmployeeName('');
-    }
+  const handleClose = () => {
+    setIsOpen(false);
+    setEditingEmployee(null);
+    setNewEmployeeName('');
+    // Don't reset authentication
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem(STORAGE_KEY);
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon">
           <Settings className="h-4 w-4" />
@@ -166,6 +181,12 @@ const SettingsDialog = () => {
                 <TimerStatistics />
               </TabsContent>
             </Tabs>
+            
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={handleLogout}>
+                Abmelden
+              </Button>
+            </div>
           </>
         )}
       </DialogContent>
