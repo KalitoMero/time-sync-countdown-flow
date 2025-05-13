@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { postgres } from '@/integrations/postgres/client';
 import { toast } from 'sonner';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 
@@ -26,21 +26,17 @@ type FilterPeriod = 'week' | 'month' | 'year' | 'all';
 export const useTimerStatistics = () => {
   const fetchCompletedTimers = async () => {
     try {
-      const { data, error } = await supabase
+      const result = await postgres
         .from('timer')
         .select('*')
         .eq('status', 'beendet')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .execute();
       
-      if (error) {
-        toast.error('Fehler beim Laden der Timer-Statistiken');
-        console.error('Error fetching completed timers:', error);
-        throw error;
-      }
-      
-      return data as TimerData[] || [];
+      return result.rows as TimerData[] || [];
     } catch (error) {
-      console.error('Error in fetchCompletedTimers:', error);
+      toast.error('Fehler beim Laden der Timer-Statistiken');
+      console.error('Error fetching completed timers:', error);
       return [];
     }
   };

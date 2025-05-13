@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { postgres } from '@/integrations/postgres/client';
 import { toast } from 'sonner';
 
 export const useEmployees = () => {
@@ -9,31 +9,36 @@ export const useEmployees = () => {
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('mitarbeiter')
-        .select('*')
-        .order('name');
+      try {
+        const result = await postgres
+          .from('mitarbeiter')
+          .select('*')
+          .order('name')
+          .execute();
 
-      if (error) {
+        return result.rows || [];
+      } catch (error) {
         toast.error('Fehler beim Laden der Mitarbeiter');
+        console.error('Error loading employees:', error);
         throw error;
       }
-
-      return data || [];
     },
   });
 
   const addEmployee = useMutation({
     mutationFn: async (name: string) => {
-      const { error } = await supabase
-        .from('mitarbeiter')
-        .insert([{ name }]);
+      try {
+        await postgres
+          .from('mitarbeiter')
+          .insert([{ name }])
+          .execute();
 
-      if (error) {
+        toast.success(`Mitarbeiter ${name} wurde hinzugefügt`);
+      } catch (error) {
         toast.error('Fehler beim Hinzufügen des Mitarbeiters');
+        console.error('Error adding employee:', error);
         throw error;
       }
-      toast.success(`Mitarbeiter ${name} wurde hinzugefügt`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -42,16 +47,19 @@ export const useEmployees = () => {
 
   const updateEmployee = useMutation({
     mutationFn: async ({ id, name }: { id: number; name: string }) => {
-      const { error } = await supabase
-        .from('mitarbeiter')
-        .update({ name })
-        .eq('id', id);
+      try {
+        await postgres
+          .from('mitarbeiter')
+          .update({ name })
+          .eq('id', id)
+          .execute();
 
-      if (error) {
+        toast.success('Mitarbeiter wurde aktualisiert');
+      } catch (error) {
         toast.error('Fehler beim Aktualisieren des Mitarbeiters');
+        console.error('Error updating employee:', error);
         throw error;
       }
-      toast.success('Mitarbeiter wurde aktualisiert');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -60,16 +68,19 @@ export const useEmployees = () => {
 
   const deleteEmployee = useMutation({
     mutationFn: async (id: number) => {
-      const { error } = await supabase
-        .from('mitarbeiter')
-        .delete()
-        .eq('id', id);
+      try {
+        await postgres
+          .from('mitarbeiter')
+          .delete()
+          .eq('id', id)
+          .execute();
 
-      if (error) {
+        toast.success('Mitarbeiter wurde gelöscht');
+      } catch (error) {
         toast.error('Fehler beim Löschen des Mitarbeiters');
+        console.error('Error deleting employee:', error);
         throw error;
       }
-      toast.success('Mitarbeiter wurde gelöscht');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['employees'] });
