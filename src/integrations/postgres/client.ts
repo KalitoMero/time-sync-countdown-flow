@@ -1,184 +1,271 @@
 
-import { Pool } from 'pg';
-
-// Create a PostgreSQL client that works in both browser and server environments
+// Definieren eines clients, der die Supabase Edge Function für Datenbankoperationen verwendet
 const createPostgresClient = () => {
-  // Configuration from environment variables
-  const connectionString = import.meta.env.VITE_POSTGRES_URL;
-  
-  try {
-    // Create a connection pool
-    const pool = new Pool({
-      connectionString,
-      // Set a reasonable pool size
-      max: 10,
-      idleTimeoutMillis: 30000,
-    });
+  const SUPABASE_PROJECT_ID = 'udvwklfhrkuvratzcnqj'; // Projekt-ID aus config.toml
+  const BASE_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/database`;
 
-    // Add event listeners for connection issues
-    pool.on('error', (err) => {
-      console.error('Unexpected error on idle client', err);
-    });
-
-    // Return an API similar to the one we were trying to use with @supabase/postgres-js
-    return {
-      from: (table: string) => {
-        return {
-          select: (columns: string) => {
-            return {
-              order: (column: string, options?: { ascending?: boolean }) => {
-                const direction = options?.ascending === false ? 'DESC' : 'ASC';
-                return {
-                  execute: async () => {
-                    const result = await pool.query(
-                      `SELECT ${columns} FROM ${table} ORDER BY ${column} ${direction}`
-                    );
-                    return { rows: result.rows };
-                  }
-                };
-              },
-              eq: (column: string, value: any) => {
-                return {
-                  order: (orderColumn: string, options?: { ascending?: boolean }) => {
-                    const direction = options?.ascending === false ? 'DESC' : 'ASC';
-                    return {
-                      execute: async () => {
-                        const result = await pool.query(
-                          `SELECT ${columns} FROM ${table} WHERE ${column} = $1 ORDER BY ${orderColumn} ${direction}`,
-                          [value]
-                        );
-                        return { rows: result.rows };
-                      }
-                    };
-                  },
-                  execute: async () => {
-                    const result = await pool.query(
-                      `SELECT ${columns} FROM ${table} WHERE ${column} = $1`,
-                      [value]
-                    );
-                    return { rows: result.rows };
-                  }
-                };
-              },
-              in: (column: string, values: any[]) => {
-                return {
-                  order: (orderColumn: string) => {
-                    return {
-                      execute: async () => {
-                        const placeholders = values.map((_, i) => `$${i + 1}`).join(',');
-                        const result = await pool.query(
-                          `SELECT ${columns} FROM ${table} WHERE ${column} IN (${placeholders}) ORDER BY ${orderColumn}`,
-                          values
-                        );
-                        return { rows: result.rows };
-                      }
-                    };
-                  }
-                };
-              },
-              execute: async () => {
-                const result = await pool.query(`SELECT ${columns} FROM ${table}`);
-                return { rows: result.rows };
-              }
-            };
-          },
-          insert: (values: object[]) => {
-            return {
-              execute: async () => {
-                if (values.length === 0) return { rows: [] };
-                
-                const firstValue = values[0];
-                const columns = Object.keys(firstValue);
-                const valuesList = values.map(obj => Object.values(obj));
-                
-                let placeholderIndex = 1;
-                const valueSets = valuesList.map(valueSet => {
-                  const placeholders = valueSet.map(() => `$${placeholderIndex++}`).join(', ');
-                  return `(${placeholders})`;
-                }).join(', ');
-                
-                const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${valueSets} RETURNING *`;
-                const flatValues = valuesList.flat();
-                
-                const result = await pool.query(query, flatValues);
-                return { rows: result.rows };
-              }
-            };
-          },
-          update: (values: object) => {
-            return {
-              eq: (column: string, value: any) => {
-                return {
-                  execute: async () => {
-                    const entries = Object.entries(values);
-                    const setClauses = entries.map((entry, i) => `${entry[0]} = $${i + 1}`).join(', ');
-                    const updateValues = entries.map(entry => entry[1]);
+  return {
+    from: (table: string) => {
+      return {
+        select: (columns: string = '*') => {
+          return {
+            order: (orderColumn: string, options?: { ascending?: boolean }) => {
+              return {
+                execute: async () => {
+                  try {
+                    const response = await fetch(BASE_URL, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        action: 'select',
+                        table,
+                        columns,
+                        orderBy: orderColumn,
+                        direction: options?.ascending === false ? 'DESC' : 'ASC'
+                      }),
+                    });
                     
-                    const query = `UPDATE ${table} SET ${setClauses} WHERE ${column} = $${updateValues.length + 1} RETURNING *`;
-                    const result = await pool.query(query, [...updateValues, value]);
-                    return { rows: result.rows };
+                    if (!response.ok) {
+                      throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                  } catch (error) {
+                    console.error('Fehler bei select mit order:', error);
+                    return { rows: [] };
                   }
-                };
-              }
-            };
-          },
-          delete: () => {
-            return {
-              eq: (column: string, value: any) => {
-                return {
-                  execute: async () => {
-                    const result = await pool.query(
-                      `DELETE FROM ${table} WHERE ${column} = $1 RETURNING *`,
-                      [value]
-                    );
-                    return { rows: result.rows };
+                }
+              };
+            },
+            eq: (column: string, value: any) => {
+              return {
+                order: (orderColumn: string, options?: { ascending?: boolean }) => {
+                  return {
+                    execute: async () => {
+                      try {
+                        const response = await fetch(BASE_URL, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            action: 'select',
+                            table,
+                            columns,
+                            conditions: {
+                              eq: { column, value }
+                            },
+                            orderBy: orderColumn,
+                            direction: options?.ascending === false ? 'DESC' : 'ASC'
+                          }),
+                        });
+                        
+                        if (!response.ok) {
+                          throw new Error(`HTTP error: ${response.status}`);
+                        }
+                        
+                        return await response.json();
+                      } catch (error) {
+                        console.error('Fehler bei select mit eq und order:', error);
+                        return { rows: [] };
+                      }
+                    }
+                  };
+                },
+                execute: async () => {
+                  try {
+                    const response = await fetch(BASE_URL, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        action: 'select',
+                        table,
+                        columns,
+                        conditions: {
+                          eq: { column, value }
+                        }
+                      }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                  } catch (error) {
+                    console.error('Fehler bei select mit eq:', error);
+                    return { rows: [] };
                   }
-                };
+                }
+              };
+            },
+            in: (column: string, values: any[]) => {
+              return {
+                order: (orderColumn: string) => {
+                  return {
+                    execute: async () => {
+                      try {
+                        const response = await fetch(BASE_URL, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            action: 'select',
+                            table,
+                            columns,
+                            conditions: {
+                              in: { column, values }
+                            },
+                            orderBy: orderColumn
+                          }),
+                        });
+                        
+                        if (!response.ok) {
+                          throw new Error(`HTTP error: ${response.status}`);
+                        }
+                        
+                        return await response.json();
+                      } catch (error) {
+                        console.error('Fehler bei select mit in und order:', error);
+                        return { rows: [] };
+                      }
+                    }
+                  };
+                }
+              };
+            },
+            execute: async () => {
+              try {
+                const response = await fetch(BASE_URL, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    action: 'select',
+                    table,
+                    columns
+                  }),
+                });
+                
+                if (!response.ok) {
+                  throw new Error(`HTTP error: ${response.status}`);
+                }
+                
+                return await response.json();
+              } catch (error) {
+                console.error('Fehler bei select:', error);
+                return { rows: [] };
               }
-            };
-          }
-        };
-      }
-    };
-  } catch (error) {
-    console.error('Failed to create Postgres client:', error);
-    // Return a dummy client for development that won't break the app
-    return {
-      from: () => ({
-        select: () => ({
-          order: () => ({
-            execute: async () => ({ rows: [] })
-          }),
-          eq: () => ({
-            order: () => ({
-              execute: async () => ({ rows: [] })
-            }),
-            execute: async () => ({ rows: [] })
-          }),
-          in: () => ({
-            order: () => ({
-              execute: async () => ({ rows: [] })
-            })
-          }),
-          execute: async () => ({ rows: [] })
-        }),
-        insert: () => ({
-          execute: async () => ({ rows: [] })
-        }),
-        update: () => ({
-          eq: () => ({
-            execute: async () => ({ rows: [] })
-          })
-        }),
-        delete: () => ({
-          eq: () => ({
-            execute: async () => ({ rows: [] })
-          })
-        })
-      })
-    };
-  }
+            }
+          };
+        },
+        insert: (values: object[]) => {
+          return {
+            execute: async () => {
+              try {
+                const response = await fetch(BASE_URL, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    action: 'insert',
+                    table,
+                    values
+                  }),
+                });
+                
+                if (!response.ok) {
+                  throw new Error(`HTTP error: ${response.status}`);
+                }
+                
+                return await response.json();
+              } catch (error) {
+                console.error('Fehler bei insert:', error);
+                return { rows: [] };
+              }
+            }
+          };
+        },
+        update: (values: object) => {
+          return {
+            eq: (column: string, value: any) => {
+              return {
+                execute: async () => {
+                  try {
+                    const response = await fetch(BASE_URL, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        action: 'update',
+                        table,
+                        values,
+                        conditions: {
+                          eq: { column, value }
+                        }
+                      }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                  } catch (error) {
+                    console.error('Fehler bei update:', error);
+                    return { rows: [] };
+                  }
+                }
+              };
+            }
+          };
+        },
+        delete: () => {
+          return {
+            eq: (column: string, value: any) => {
+              return {
+                execute: async () => {
+                  try {
+                    const response = await fetch(BASE_URL, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        action: 'delete',
+                        table,
+                        conditions: {
+                          eq: { column, value }
+                        }
+                      }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                  } catch (error) {
+                    console.error('Fehler bei delete:', error);
+                    return { rows: [] };
+                  }
+                }
+              };
+            }
+          };
+        }
+      };
+    }
+  };
 };
 
-// Export a singleton instance of the postgres client
+// Export einer Singleton-Instanz des postgres-Clients
 export const postgres = createPostgresClient();

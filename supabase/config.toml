@@ -1,1 +1,5 @@
+
 project_id = "udvwklfhrkuvratzcnqj"
+
+[functions.database]
+verify_jwt = false
