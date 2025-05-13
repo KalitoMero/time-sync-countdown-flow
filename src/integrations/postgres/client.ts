@@ -33,6 +33,9 @@ class PostgresQueryBuilder {
   private whereParams: any[] = [];
   private orderByColumns: string[] = [];
   private paramCounter: number = 1;
+  private _insertQuery: { query: string, values: any[] } | null = null;
+  private _updateQuery: { setClauses: string[], values: any[] } | null = null;
+  private _deleteFlag: boolean = false;
 
   constructor(tableName: string) {
     this.table = tableName;
@@ -70,31 +73,8 @@ class PostgresQueryBuilder {
     return this;
   }
 
-  // Execute SELECT query
-  async execute(): Promise<QueryResult> {
-    let query = `SELECT ${this.selectedColumns} FROM ${this.table}`;
-    
-    if (this.whereConditions.length > 0) {
-      query += ` WHERE ${this.whereConditions.join(' AND ')}`;
-    }
-    
-    if (this.orderByColumns.length > 0) {
-      query += ` ORDER BY ${this.orderByColumns.join(', ')}`;
-    }
-    
-    try {
-      const result = await pool.query(query, this.whereParams);
-      return result;
-    } catch (error) {
-      console.error('SQL Query Error:', error);
-      console.error('Query:', query);
-      console.error('Params:', this.whereParams);
-      throw error;
-    }
-  }
-
   // Insert data and return the inserted rows
-  async insert(data: Record<string, any> | Record<string, any>[]): PostgresQueryBuilder {
+  insert(data: Record<string, any> | Record<string, any>[]): PostgresQueryBuilder {
     const rows = Array.isArray(data) ? data : [data];
     if (rows.length === 0) {
       return this;
@@ -127,11 +107,9 @@ class PostgresQueryBuilder {
     
     return this;
   }
-  
-  private _insertQuery: { query: string, values: any[] } | null = null;
 
   // Update data and return the updated rows
-  async update(data: Record<string, any>): PostgresQueryBuilder {
+  update(data: Record<string, any>): PostgresQueryBuilder {
     if (Object.keys(data).length === 0) {
       return this;
     }
@@ -155,18 +133,14 @@ class PostgresQueryBuilder {
     
     return this;
   }
-  
-  private _updateQuery: { setClauses: string[], values: any[] } | null = null;
 
   // Delete data and return the deleted rows
-  async delete(): PostgresQueryBuilder {
+  delete(): PostgresQueryBuilder {
     this._deleteFlag = true;
     return this;
   }
-  
-  private _deleteFlag: boolean = false;
 
-  // Actually execute an INSERT, UPDATE, or DELETE query
+  // Execute the query (SELECT, INSERT, UPDATE, or DELETE)
   async execute(): Promise<QueryResult> {
     try {
       // Handle INSERT
@@ -212,8 +186,15 @@ class PostgresQueryBuilder {
         query += ` ORDER BY ${this.orderByColumns.join(', ')}`;
       }
       
-      const result = await pool.query(query, this.whereParams);
-      return result;
+      try {
+        const result = await pool.query(query, this.whereParams);
+        return result;
+      } catch (error) {
+        console.error('SQL Query Error:', error);
+        console.error('Query:', query);
+        console.error('Params:', this.whereParams);
+        throw error;
+      }
     } catch (error) {
       console.error('SQL Query Error:', error);
       throw error;
