@@ -39,6 +39,18 @@ const createPostgresClient = () => {
               },
               eq: (column: string, value: any) => {
                 return {
+                  order: (orderColumn: string, options?: { ascending?: boolean }) => {
+                    const direction = options?.ascending === false ? 'DESC' : 'ASC';
+                    return {
+                      execute: async () => {
+                        const result = await pool.query(
+                          `SELECT ${columns} FROM ${table} WHERE ${column} = $1 ORDER BY ${orderColumn} ${direction}`,
+                          [value]
+                        );
+                        return { rows: result.rows };
+                      }
+                    };
+                  },
                   execute: async () => {
                     const result = await pool.query(
                       `SELECT ${columns} FROM ${table} WHERE ${column} = $1`,
@@ -138,6 +150,9 @@ const createPostgresClient = () => {
             execute: async () => ({ rows: [] })
           }),
           eq: () => ({
+            order: () => ({
+              execute: async () => ({ rows: [] })
+            }),
             execute: async () => ({ rows: [] })
           }),
           in: () => ({
