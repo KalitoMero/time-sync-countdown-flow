@@ -94,10 +94,13 @@ class PostgresQueryBuilder {
   }
 
   // Insert data and return the inserted rows
-  async insert(data: Record<string, any> | Record<string, any>[]): Promise<QueryResult> {
+  async insert(data: Record<string, any> | Record<string, any>[]): PostgresQueryBuilder {
     const rows = Array.isArray(data) ? data : [data];
-    if (rows.length === 0) return { rows: [], rowCount: 0 } as any;
+    if (rows.length === 0) {
+      return this;
+    }
 
+    this.selectedColumns = '*'; // We'll return all columns after inserting
     const columns = Object.keys(rows[0]);
     let placeholderCounter = 1;
     const values: any[] = [];
@@ -113,27 +116,27 @@ class PostgresQueryBuilder {
       valueStrings.push(`(${rowPlaceholders.join(', ')})`);
     });
 
-    const query = `
-      INSERT INTO ${this.table} (${columns.join(', ')})
-      VALUES ${valueStrings.join(', ')}
-      RETURNING *
-    `;
-
-    try {
-      const result = await pool.query(query, values);
-      return result;
-    } catch (error) {
-      console.error('SQL Insert Error:', error);
-      throw error;
-    }
+    this._insertQuery = {
+      query: `
+        INSERT INTO ${this.table} (${columns.join(', ')})
+        VALUES ${valueStrings.join(', ')}
+        RETURNING *
+      `,
+      values
+    };
+    
+    return this;
   }
+  
+  private _insertQuery: { query: string, values: any[] } | null = null;
 
   // Update data and return the updated rows
-  async update(data: Record<string, any>): Promise<QueryResult> {
-    if (this.whereConditions.length === 0) {
-      throw new Error('Update requires where conditions');
+  async update(data: Record<string, any>): PostgresQueryBuilder {
+    if (Object.keys(data).length === 0) {
+      return this;
     }
 
+    this.selectedColumns = '*'; // We'll return all columns after updating
     const columns = Object.keys(data);
     const setClauses: string[] = [];
     const values: any[] = [];
@@ -145,41 +148,74 @@ class PostgresQueryBuilder {
       paramCounter++;
     });
 
-    const query = `
-      UPDATE ${this.table}
-      SET ${setClauses.join(', ')}
-      WHERE ${this.whereConditions.join(' AND ')}
-      RETURNING *
-    `;
-
-    const allParams = [...values, ...this.whereParams];
-
-    try {
-      const result = await pool.query(query, allParams);
-      return result;
-    } catch (error) {
-      console.error('SQL Update Error:', error);
-      throw error;
-    }
+    this._updateQuery = {
+      setClauses,
+      values
+    };
+    
+    return this;
   }
+  
+  private _updateQuery: { setClauses: string[], values: any[] } | null = null;
 
   // Delete data and return the deleted rows
-  async delete(): Promise<QueryResult> {
-    if (this.whereConditions.length === 0) {
-      throw new Error('Delete requires where conditions');
-    }
+  async delete(): PostgresQueryBuilder {
+    this._deleteFlag = true;
+    return this;
+  }
+  
+  private _deleteFlag: boolean = false;
 
-    const query = `
-      DELETE FROM ${this.table}
-      WHERE ${this.whereConditions.join(' AND ')}
-      RETURNING *
-    `;
-
+  // Actually execute an INSERT, UPDATE, or DELETE query
+  async execute(): Promise<QueryResult> {
     try {
+      // Handle INSERT
+      if (this._insertQuery) {
+        const { query, values } = this._insertQuery;
+        const result = await pool.query(query, values);
+        return result;
+      }
+      
+      // Handle UPDATE
+      if (this._updateQuery && this.whereConditions.length > 0) {
+        const { setClauses, values } = this._updateQuery;
+        const query = `
+          UPDATE ${this.table}
+          SET ${setClauses.join(', ')}
+          WHERE ${this.whereConditions.join(' AND ')}
+          RETURNING *
+        `;
+        const allParams = [...values, ...this.whereParams];
+        const result = await pool.query(query, allParams);
+        return result;
+      }
+      
+      // Handle DELETE
+      if (this._deleteFlag && this.whereConditions.length > 0) {
+        const query = `
+          DELETE FROM ${this.table}
+          WHERE ${this.whereConditions.join(' AND ')}
+          RETURNING *
+        `;
+        const result = await pool.query(query, this.whereParams);
+        return result;
+      }
+      
+      // Handle SELECT (default)
+      let query = `SELECT ${this.selectedColumns} FROM ${this.table}`;
+      
+      if (this.whereConditions.length > 0) {
+        query += ` WHERE ${this.whereConditions.join(' AND ')}`;
+      }
+      
+      if (this.orderByColumns.length > 0) {
+        query += ` ORDER BY ${this.orderByColumns.join(', ')}`;
+      }
+      
       const result = await pool.query(query, this.whereParams);
       return result;
     } catch (error) {
-      console.error('SQL Delete Error:', error);
+      console.error('SQL Query Error:', error);
       throw error;
     }
   }
