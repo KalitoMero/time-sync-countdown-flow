@@ -1,8 +1,9 @@
 
-// Definieren eines clients, der die Supabase Edge Function für Datenbankoperationen verwendet
+import config from '@/config/config';
+
+// Definieren eines clients, der die API für Datenbankoperationen verwendet
 const createPostgresClient = () => {
-  const SUPABASE_PROJECT_ID = 'udvwklfhrkuvratzcnqj'; // Projekt-ID aus config.toml
-  const BASE_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/database`;
+  const BASE_URL = config.apiBaseUrl;
 
   return {
     from: (table: string) => {
@@ -136,6 +137,33 @@ const createPostgresClient = () => {
                       }
                     }
                   };
+                },
+                execute: async () => {
+                  try {
+                    const response = await fetch(BASE_URL, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        action: 'select',
+                        table,
+                        columns,
+                        conditions: {
+                          in: { column, values }
+                        }
+                      }),
+                    });
+                    
+                    if (!response.ok) {
+                      throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                  } catch (error) {
+                    console.error('Fehler bei select mit in:', error);
+                    return { rows: [] };
+                  }
                 }
               };
             },
